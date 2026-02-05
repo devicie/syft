@@ -488,7 +488,7 @@ func toPackages(rels *relationship.Index, catalog *pkg.Collection, sbom sbom.SBO
 			//   (i) the SPDX document creator has made no attempt to determine this field; or
 			//   (ii) the SPDX document creator has intentionally provided no information (no meaning should be implied by doing so).
 			//
-			PackageCopyrightText: noAssertion,
+			PackageCopyrightText: helpers.Copyright(p),
 
 			// 7.18: Package Summary Description
 			// Cardinality: optional, one
