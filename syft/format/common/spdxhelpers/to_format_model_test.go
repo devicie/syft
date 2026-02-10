@@ -1056,3 +1056,74 @@ func Test_otherLicenses(t *testing.T) {
 		})
 	}
 }
+
+func Test_PEBinaryCopyright(t *testing.T) {
+	tests := []struct {
+		name     string
+		pkg      pkg.Package
+		expected string
+	}{
+		{
+			name: "PE binary with copyright",
+			pkg: pkg.Package{
+				Name:    "test.exe",
+				Version: "1.0.0",
+				Type:    pkg.BinaryPkg,
+				Metadata: pkg.PEBinary{
+					VersionResources: pkg.KeyValues{
+						{Key: "LegalCopyright", Value: "Copyright (c) 2024 Test Company"},
+						{Key: "ProductName", Value: "Test Product"},
+					},
+				},
+			},
+			expected: "Copyright (c) 2024 Test Company",
+		},
+		{
+			name: "PE binary without copyright",
+			pkg: pkg.Package{
+				Name:    "test.exe",
+				Version: "1.0.0",
+				Type:    pkg.BinaryPkg,
+				Metadata: pkg.PEBinary{
+					VersionResources: pkg.KeyValues{
+						{Key: "ProductName", Value: "Test Product"},
+					},
+				},
+			},
+			expected: helpers.NOASSERTION,
+		},
+		{
+			name: "non-PE binary package",
+			pkg: pkg.Package{
+				Name:     "test-package",
+				Version:  "1.0.0",
+				Type:     pkg.NpmPkg,
+				Metadata: pkg.NpmPackage{},
+			},
+			expected: helpers.NOASSERTION,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := sbom.SBOM{
+				Artifacts: sbom.Artifacts{
+					Packages: pkg.NewCollection(test.pkg),
+				},
+			}
+			doc := ToFormatModel(s)
+			require.NotEmpty(t, doc.Packages)
+
+			// Find the package (not the root)
+			var foundPkg *spdx.Package
+			for _, p := range doc.Packages {
+				if p.PackageName == test.pkg.Name {
+					foundPkg = p
+					break
+				}
+			}
+			require.NotNil(t, foundPkg, "package not found in SPDX document")
+			assert.Equal(t, test.expected, foundPkg.PackageCopyrightText)
+		})
+	}
+}
